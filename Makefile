@@ -15,7 +15,7 @@ install-pkg:
 		cd $(ROOT)/server && \
 			python3 -m venv venv && \
 			. venv/bin/activate && \
-			pip3 install fastapi jinja2 python-multipart uvicorn; \
+			pip3 install pexpect fastapi jinja2 python-multipart uvicorn; \
 	fi
 	@if [ ! -d "$(ROOT)/ui/node_modules" ]; then \
 		cd $(ROOT)/ui && yarn install; \

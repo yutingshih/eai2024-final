@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import json
 import os
+import model
 
 app = FastAPI()
 
@@ -36,7 +37,7 @@ def write_history(data):
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", { "request": request})
+    return templates.TemplateResponse("index.html", { "request": request })
 
 @app.get("/init")
 async def init():
@@ -46,7 +47,7 @@ async def init():
 @app.post("/api/chat")
 async def chat(request: Request):
     json = await request.json()
-    json["assistant"] = "model response"
+    json["assistant"] = model.call(model.map(json))
     history = read_history()
     history.append(json)
     write_history(history)
