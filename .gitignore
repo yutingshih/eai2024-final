@@ -166,3 +166,9 @@ static
 templates
 node_modules
 history.json
+
+# Model weights
+*.pt
+*.pth
+weights/
+act_scales/
