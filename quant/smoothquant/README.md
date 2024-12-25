@@ -1,15 +1,18 @@
 # SmoothQuant for Llama
 
+Install dependency packages based on your environement
+
 ```shell
-pip install -r requirements.txt
+# For CUDA
+pip install -r requirements/cuda.txt
+
+# For MPS
+pip install -r requirements/mps.txt
+
+# For CPU-only
+pip install -r requirements/cpu.txt
 ```
-for MPS backend please change the version of package in requirements.txt
-```
-torch==2.4.1
-torchaudio==2.4.1
-torchvision==0.19.1
-transformers==4.46.3
-```
+
 ## Quantize FP16 Model to INT8
 
 Before quantizing the model, make sure you have already run the [`generate_act_scales.py`](./generate_act_scales.py) to generate the activation scales or download it from AISLab NAS.
