@@ -1,0 +1,9 @@
+# 忽略特定檔案
+llama2-smooth-w8a8.pt
+llama-2-7b.pt
+
+# 忽略 smoothquant 資料夾
+smoothquant/
+
+# 忽略 venv 資料夾
+venv/
