@@ -1,12 +1,9 @@
 import argparse
 import os
-import sys
+from packaging.version import Version
+from pathlib import Path
 
-# project_root = os.path.dirname(os.path.abspath(__file__))
-# sys.path.append(os.path.join(project_root, "smoothquant"))
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-
+import tqdm
 import torch
 from torch import nn
 from transformers import (
@@ -18,7 +15,8 @@ from transformers import (
 from datasets import load_dataset
 from smoothquant.fake_quant import W8A8Linear
 
-import tqdm
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 DEVICE = (
     "cuda"
@@ -60,11 +58,20 @@ class Evaluator:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     parser.add_argument(
         "--model",
         default="../../weights/smoothquant/llama2-smooth-w8a8.pt",
         help="Path to the PyTorch model to be evaluated (*.pt)",
+    )
+    parser.add_argument(
+        "-f",
+        "--format",
+        choices=["pt", "hf"],
+        default="pt",
+        help="Format to load the quantized model",
     )
     parser.add_argument(
         "--tokenizer",
@@ -82,12 +89,15 @@ def parse_args():
     )
     args = parser.parse_args()
 
-    if args.quantized and not os.path.isfile(args.model):
+    args.model = Path(args.model)
+    args.tokenizer = Path(args.tokenizer)
+
+    if args.format == "pt" and not args.model.is_file():
         raise ValueError(f"--model argument should be a file. got {args.model}")
-    elif not args.quantized and not os.path.isdir(args.model):
+    elif args.format == "hf" and not args.model.is_dir():
         raise ValueError(f"--model argument should be a directory. got {args.model}")
 
-    if not os.path.isdir(args.tokenizer):
+    if not args.tokenizer.is_dir():
         raise ValueError(
             f"--tokenizer argument should be a directory. got {args.tokenizer}"
         )
@@ -95,12 +105,12 @@ def parse_args():
     return args
 
 
-def evaluate_fp16_model(model_path: str, evaluator: Evaluator) -> float:
+def evaluate_fp16_model(path: str | Path, evaluator: Evaluator) -> float:
     model = LlamaForCausalLM.from_pretrained(
-        model_path, torch_dtype=torch.float16, device_map="auto"
+        path, torch_dtype=torch.float16, device_map="auto"
     )
 
-    print(f"Model loaded from {model_path}")
+    print(f"Model loaded from {path}")
     if verbose:
         print(model)
 
@@ -109,14 +119,24 @@ def evaluate_fp16_model(model_path: str, evaluator: Evaluator) -> float:
     return ppl
 
 
-def evaluate_int8_model(model_path: str, evaluator: Evaluator) -> float:
+def evaluate_int8_model(path: str | Path, evaluator: Evaluator, format: str) -> float:
     W8A8Linear.nop = lambda self, x: x
 
     # you need to map the model to the CPU first instead of directly loading it onto the MPS device
-    model = torch.load(model_path, weights_only=False, map_location=torch.device("cpu"))
+    if format == "pt":
+        if Version(torch.__version__) >= Version("2.0.0"):
+            model = torch.load(path, weights_only=False, map_location="cpu")
+        else:
+            model = torch.load(path, map_location="cpu")
+    elif format == "hf":
+        model = AutoModelForCausalLM.from_pretrained(
+            path, torch_dtype=torch.float16, device_map="auto"
+        )
+    else:
+        raise ValueError(f"Unknown format: {format}")
     model = model.to(DEVICE)
 
-    print(f"Model loaded from {model_path}")
+    print(f"Model loaded from {path}")
     if verbose:
         print(model)
 
@@ -139,9 +159,9 @@ def main():
     evaluator = Evaluator(dataset, tokenizer, DEVICE)
 
     if args.quantized:
-        evaluate_int8_model(model_path=args.model, evaluator=evaluator)
+        evaluate_int8_model(path=args.model, evaluator=evaluator, format=args.format)
     else:
-        evaluate_fp16_model(model_path=args.model, evaluator=evaluator)
+        evaluate_fp16_model(path=args.model, evaluator=evaluator)
 
 
 if __name__ == "__main__":
