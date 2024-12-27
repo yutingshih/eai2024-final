@@ -3,14 +3,14 @@ port=222
 
 script=$0
 sync_dir=${2:-weights}
-remote_dir=/Data-Weight/Llama/weights
+remote_dir=/Data-Weight/Llama
 local_dir=$(realpath $(dirname $script)/..)
 
 upload() {
     src=$local_dir/$sync_dir
     dst=$remote_dir/$sync_dir
     printf "$hostname's account: " && read username
-    sftp -P $port $username@$hostname <<< "put -r $src/* $dst"
+    sftp -P $port $username@$hostname <<< "put -r $src/ $dst"
 }
 
 download() {
@@ -18,7 +18,7 @@ download() {
     dst=$local_dir/$sync_dir
     mkdir -p $dst
     printf "$hostname's account: " && read username
-    sftp -P $port $username@$hostname <<< "get -r $src/* $dst"
+    sftp -P $port $username@$hostname <<< "get -r $src/ $dst"
 }
 
 help() {
@@ -60,4 +60,3 @@ case $1 in
         help
         ;;
 esac
-

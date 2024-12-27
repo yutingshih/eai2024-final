@@ -29,6 +29,33 @@ pip install -r requirements/mps.txt
 pip install -r requirements/cpu.txt
 ```
 
+## Download Pretrained Weights
+
+We have provided a shell script [`scripts/nas.sh`](../../scripts/nas.sh) for downloading/uploading files or directories from/to [AISLab NAS](https://aislabnas.ee.ncku.edu.tw). Use the following command to download pretrained weights.
+
+```shell
+./scripts/nas.sh download weights
+```
+
+The directory structure would be as follows:
+
+```
+eai2024-final
+└── weights
+    ├── act_scales
+    │   ├── llama-2-7b.pt
+    │   ├── llama-3.1-8b.pt
+    │   └── README.md
+    ├── meta-llama
+    │   ├── Llama-2-7b-hf
+    │   └── Llama-3.1-8B-Instruct
+    └── smoothquant-1226
+        ├── llama2-smooth-w8a8.hf
+        └── llama2-smooth-w8a8.pt
+```
+
+The latest quantized weights is in `weights/smoothquant-1226/`.
+
 ## Quantize FP16 Model to INT8
 
 Before quantizing the model, make sure you have already run the [`generate_act_scales.py`](./generate_act_scales.py) to generate the activation scales or download it from AISLab NAS.
