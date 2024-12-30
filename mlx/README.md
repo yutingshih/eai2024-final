@@ -2,7 +2,7 @@
 
 ## HTTP Model Server
 
-Start the server with:◊
+Start the server with:
 
 ```shell
 mlx_lm.server --model <path_to_model_or_hf_repo>
