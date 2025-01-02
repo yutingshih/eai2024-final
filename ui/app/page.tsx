@@ -1,6 +1,8 @@
 'use client';
 /*eslint-disable*/
 
+import { events, stream } from 'fetch-event-stream';
+
 import Link from '@/components/link/Link';
 import MessageBoxChat from '@/components/MessageBox';
 import { ChatBody, OpenAIModel } from '@/types/types';
@@ -19,13 +21,14 @@ import {
   Text,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { MdAutoAwesome, MdBolt, MdEdit, MdPerson } from 'react-icons/md';
 import Bg from '../public/img/chat/bg-image.png';
 import { Context } from './layout';
 
 export default function Chat() {
   const { history, setHistory } = useContext(Context);
+  const [messages, setMessages] = useState<Array<any>>([]);
 
   // Input States
   const [inputOnSubmit, setInputOnSubmit] = useState<string>('');
@@ -33,7 +36,7 @@ export default function Chat() {
   // Response message
   const [outputCode, setOutputCode] = useState<string>('');
   // ChatGPT model
-  const [model, setModel] = useState<OpenAIModel>('Llama-3.1-8B-Instruct-Atom');
+  const [model, setModel] = useState<OpenAIModel>('Llama-3.1-8B');
   // Loading state
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -50,7 +53,7 @@ export default function Chat() {
   const buttonBg = useColorModeValue('white', 'whiteAlpha.100');
   const gray = useColorModeValue('gray.500', 'white');
   const buttonShadow = useColorModeValue(
-    '14px 27px 45px rgba(112, 144, 176, 0.2)',
+    '0px 0px 45px rgba(112, 144, 176, 0.2)',
     'none',
   );
   const textColor = useColorModeValue('navy.700', 'white');
@@ -58,26 +61,19 @@ export default function Chat() {
     { color: 'gray.500' },
     { color: 'whiteAlpha.600' },
   );
-  const handleTranslate = async () => {
-    let apiKey = localStorage.getItem('apiKey');
+
+  const handleChange = useCallback((Event: any) => {
+    setInputCode(Event.target.value as string);
+  }, [setInputCode]);
+
+  const handleTranslate = useCallback(() => {
     setInputOnSubmit(inputCode);
+    setOutputCode(" ");
 
     // Chat post conditions(maximum number of characters, valid message etc.)
-    const maxCodeLength = model === "Llama-3.1-8B-Instruct-SmoothQuant" ? 700 : 700;
-
-    // check whether server is alive
-
-    let isServerDead = false
-
-    await fetch('http://127.0.0.1:8000/api/ping').catch(() => { isServerDead = true; });
-
-    if (isServerDead) {
-      alert("Llama server is not existing.");
-      return;
-    }
+    const maxCodeLength = 512;
 
     // check user input
-
     if (!inputCode) {
       alert('Please enter your message.');
       return;
@@ -90,52 +86,77 @@ export default function Chat() {
       return;
     }
 
-    setOutputCode(' ');
     setLoading(true);
+    setMessages(prev => [
+      ...prev,
+      { role: "system", content: "" },
+      { role: "user", content: inputCode },
+    ]);
+  }, [setInputOnSubmit, inputCode, setOutputCode, setLoading, setMessages]);
 
-    // transmission
+  const handleKeyDown = useCallback((e: any) => {
+    if (e.key != "Enter")
+      return;
 
-    const response = await fetch('http://localhost:8000/api/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ system: "", user: inputCode }),
-    });
+    handleTranslate();
+  }, [handleTranslate]);
 
-    const data = await response.json();
-    setOutputCode(data["assistant"]);
+  useEffect(() => {
+    if (!loading)
+      return;
 
-    if (!setHistory)
-      console.warn("setHistory undefined!");
-    else {
-      setHistory(history + JSON.stringify(data));
+    setInputCode("");
+
+    const post = async () => {
+      const events = await stream("http://localhost:8080/v1/chat/completions", {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages,
+          stream: true,
+        }),
+      });
+
+      function isValidJSON(str?: string) {
+        if (!str)
+          return false;
+
+        try {
+          JSON.parse(str);
+        } catch {
+          return false;
+        }
+        return true;
+      }
+
+      for await (const event of events) {
+        if (!isValidJSON(event.data))
+          continue;
+
+        if (model == "Llama-2-7B")
+          console.log(JSON.parse(event.data!));
+        else if (model == "Llama-3.1-8B")
+          setOutputCode(prev => prev + JSON.parse(event.data!)["choices"][0]["delta"]["content"]);
+        else
+          alert("Unsupported model");
+      }
     }
 
+    post();
+
     setLoading(false);
-  };
-  // -------------- Copy Response --------------
-  // const copyToClipboard = (text: string) => {
-  //   const el = document.createElement('textarea');
-  //   el.value = text;
-  //   document.body.appendChild(el);
-  //   el.select();
-  //   document.execCommand('copy');
-  //   document.body.removeChild(el);
-  // };
+  }, [loading, setInputCode, messages, setHistory, outputCode, setMessages]);
 
-  // *** Initializing apiKey with .env.local value
-  // useEffect(() => {
-  // ENV file verison
-  // const apiKeyENV = process.env.NEXT_PUBLIC_OPENAI_API_KEY
-  // if (apiKey === undefined || null) {
-  //   setApiKey(apiKeyENV)
-  // }
-  // }, [])
+  useEffect(() => {
+    setMessages(prev => [
+      ...prev,
+      { role: "assistant", content: outputCode }
+    ]);
 
-  const handleChange = (Event: any) => {
-    setInputCode(Event.target.value);
-  };
+    setHistory(prev => prev + outputCode);
+  }, [outputCode, setMessages, setHistory]);
 
   return (
     <Flex
@@ -173,15 +194,15 @@ export default function Chat() {
               transition="0.3s"
               justify={'center'}
               align="center"
-              bg={model === 'Llama-3.1-8B-Instruct-Atom' ? buttonBg : 'transparent'}
-              w="460px"
+              bg={model === 'Llama-2-7B' ? buttonBg : 'transparent'}
+              w="300px"
               h="70px"
-              boxShadow={model === 'Llama-3.1-8B-Instruct-Atom' ? buttonShadow : 'none'}
+              boxShadow={model === 'Llama-2-7B' ? buttonShadow : 'none'}
               borderRadius="14px"
               color={textColor}
               fontSize="18px"
               fontWeight={'700'}
-              onClick={() => setModel('Llama-3.1-8B-Instruct-Atom')}
+              onClick={() => setModel('Llama-2-7B')}
             >
               <Flex
                 borderRadius="full"
@@ -199,22 +220,22 @@ export default function Chat() {
                   color={iconColor}
                 />
               </Flex>
-              Llama-3.1-8B-Instruct-Atom
+              Llama-2-7B
             </Flex>
             <Flex
               cursor={'pointer'}
               transition="0.3s"
               justify={'center'}
               align="center"
-              bg={model === "Llama-3.1-8B-Instruct-SmoothQuant" ? buttonBg : 'transparent'}
-              w="460px"
+              bg={model === "Llama-3.1-8B" ? buttonBg : 'transparent'}
+              w="300px"
               h="70px"
-              boxShadow={model === "Llama-3.1-8B-Instruct-SmoothQuant" ? buttonShadow : 'none'}
+              boxShadow={model === "Llama-3.1-8B" ? buttonShadow : 'none'}
               borderRadius="14px"
               color={textColor}
               fontSize="18px"
               fontWeight={'700'}
-              onClick={() => setModel("Llama-3.1-8B-Instruct-SmoothQuant")}
+              onClick={() => setModel("Llama-3.1-8B")}
             >
               <Flex
                 borderRadius="full"
@@ -232,7 +253,7 @@ export default function Chat() {
                   color={iconColor}
                 />
               </Flex>
-              Llama-3.1-8B-Instruct-SmoothQuant
+              Llama-3.1-8B
             </Flex>
           </Flex>
 
@@ -332,7 +353,9 @@ export default function Chat() {
             color={inputColor}
             _placeholder={placeholderColor}
             placeholder="Type your message here..."
+            value={inputCode}
             onChange={handleChange}
+            onKeyDown={handleKeyDown}
           />
           <Button
             variant="primary"

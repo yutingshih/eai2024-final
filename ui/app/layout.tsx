@@ -1,4 +1,6 @@
 'use client';
+import type { Dispatch } from 'react';
+
 import React, { createContext, ReactNode } from 'react';
 import type { AppProps } from 'next/app';
 import { ChakraProvider, Box, Portal, useDisclosure } from '@chakra-ui/react';
@@ -16,7 +18,7 @@ import '@/styles/Plugins.css';
 import '@/styles/MiniCalendar.css';
 import AppWrappers from './AppWrappers';
 
-export const Context = createContext({ history: "", setHistory: (str: string) => { } })
+export const Context = createContext<{ history: string, setHistory: Dispatch<React.SetStateAction<string>> }>({ history: "", setHistory: () => {}});
 
 export const ContextProvider = ({ children }: { children: ReactNode }) => {
   const [history, setHistory] = useState("");
