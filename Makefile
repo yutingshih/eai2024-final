@@ -13,6 +13,7 @@ endif
 
 ifeq ($(VENV),)
     $(warning No existing virtual environment found. Now creat a new one ("eai-final-2025-fall"))
+    $(shell conda create --name eai-final-2024-fall python=3.10)
 else
     $(shell conda activate eai-final-2025-fall)
 endif
