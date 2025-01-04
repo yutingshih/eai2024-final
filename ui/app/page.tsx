@@ -35,6 +35,7 @@ export default function Chat() {
   const [inputCode, setInputCode] = useState<string>('');
   // Response message
   const [outputCode, setOutputCode] = useState<string>('');
+  const [isTransmissionDone, setTransmissionDone] = useState<boolean>(true);
   // ChatGPT model
   const [model, setModel] = useState<OpenAIModel>('Llama-3.1-8B');
   // Loading state
@@ -95,11 +96,14 @@ export default function Chat() {
   }, [setInputOnSubmit, inputCode, setOutputCode, setLoading, setMessages]);
 
   const handleKeyDown = useCallback((e: any) => {
+    if (loading)
+      return;
     if (e.key != "Enter")
       return;
 
+    setTransmissionDone(false);
     handleTranslate();
-  }, [handleTranslate]);
+  }, [loading, setTransmissionDone, handleTranslate]);
 
   useEffect(() => {
     if (!loading)
@@ -142,21 +146,26 @@ export default function Chat() {
         else
           alert("Unsupported model");
       }
+
+      setTransmissionDone(true);
     }
 
     post();
 
     setLoading(false);
-  }, [loading, setInputCode, messages, setHistory, outputCode, setMessages]);
+  }, [loading, setInputCode, messages, setTransmissionDone]);
 
   useEffect(() => {
+    if (!isTransmissionDone)
+      return;
+
     setMessages(prev => [
       ...prev,
       { role: "assistant", content: outputCode }
     ]);
 
     setHistory(prev => prev + outputCode);
-  }, [outputCode, setMessages, setHistory]);
+  }, [isTransmissionDone, outputCode, setMessages, setHistory]);
 
   return (
     <Flex
@@ -302,14 +311,6 @@ export default function Chat() {
               >
                 {inputOnSubmit}
               </Text>
-              <Icon
-                cursor="pointer"
-                as={MdEdit}
-                ms="auto"
-                width="20px"
-                height="20px"
-                color={gray}
-              />
             </Flex>
           </Flex>
           <Flex w="100%">
