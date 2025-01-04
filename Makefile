@@ -35,6 +35,7 @@ start-ui: install-packages
 	@cd "$(ROOT)/ui" && yarn run start
 
 .PHONY: clean
+clean:
 	@$(RM) -r "$(ROOT)/.next"
 
 .PHONY: distclean
