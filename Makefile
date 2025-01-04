@@ -1,7 +1,7 @@
 ROOT := $(shell pwd)
 
 .PHONY: all
-all: start
+all: install-packages
 
 CONDA := $(shell which conda)
 
@@ -48,12 +48,16 @@ install-packages: check-tools
 			mlx==0.21.0 \
 			mlx-lm==0.20.1 \
 			coremltools==8.1
+	@cd "$(ROOT)/ui && yarn build
 
-.PHONY: start
-start: install-packages
+.PHONY: start-server
+start-server:
 	@. ~/anaconda3/bin/activate eai-final-2024-fall && \
-		mlx_lm.server --model "$(MODEL)" & export SERVER_PID=$$!
-	@cd "$(ROOT)/ui" && yarn run build && yarn run start
+		mlx_lm.server --model "$(MODEL)"
+
+.PHONY: start-ui
+start-ui:
+	@cd "$(ROOT)/ui" && yarn run start
 
 .PHONY: distclean
 distclean:
