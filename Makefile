@@ -12,8 +12,8 @@ else
 endif
 
 ifeq ($(VENV),)
-    $(warning No existing virtual environment found. Now creat a new one ("eai-final-2025-fall"))
-    $(shell conda create --name eai-final-2024-fall python=3.10)
+    $(warning No existing virtual environment found. Now creat a new one ("eai-final-2024-fall"))
+    $(shell conda create -y --name eai-final-2024-fall python=3.10)
 endif
 
 MODEL ?=
@@ -42,7 +42,7 @@ install-packages: check-tools
 	@if [ ! -d "$(ROOT)/ui/node_modules" ]; then \
 		cd "$(ROOT)/ui" && yarn install; \
 	fi
-	. ~/anaconda3/bin/activate eai-final-2024-fall && \
+	@conda init zsh && conda activate eai-final-2024-fall && \
 		pip install \
 			huggingface-hub==0.26.2 \
 			mlx==0.21.0 \
@@ -52,7 +52,7 @@ install-packages: check-tools
 
 .PHONY: start-server
 start-server:
-	@. ~/anaconda3/bin/activate eai-final-2024-fall && \
+	@conda init zsh && conda activate eai-final-2024-fall && \
 		mlx_lm.server --model "$(MODEL)"
 
 .PHONY: start-ui
@@ -62,3 +62,4 @@ start-ui:
 .PHONY: distclean
 distclean:
 	@$(RM) -r "$(ROOT)/ui/node_modules"
+	@$(RM) -r "$(ROOT)/.next"
