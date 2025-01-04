@@ -19,7 +19,8 @@ First, create the virtual environment using `conda`
 
 ```shell
 # create new virtual environment if it is not existing
-$ conda env create -y --name "<your-env-name>"
+$ conda create -y --name "<your-env-name>" python=3.10
+
 # otherwise, activate it
 $ conda activate "<your-env-name>"
 ```
@@ -47,6 +48,11 @@ In `eai2024-final` directory, run the following commands to run the frontend ser
 ```shell
 $ make install-packages
 $ make start-ui
+
+# or simply run:
+$ make
 ```
 
 The page can be seen at http://localhost:3000
+
+**Note** If there is something going wrong with `make` or `yarn run build`, run `make clean` to cleanup the Next.js build.

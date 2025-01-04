@@ -9,16 +9,6 @@ ifeq ($(CONDA),)
     $(error Conda is not installed.)
 endif
 
-ifeq ($(VENV),)
-    $(error No existing virtual environment found. Now creat a new one ("eai-final-2024-fall"))
-endif
-
-MODEL ?=
-
-ifeq ($(MODEL),)
-    $(error Please specify the path to the model)
-endif
-
 .PHONY: check-tools
 check-tools:
 	@if ! command -v node &>/dev/null; then \
@@ -44,7 +34,9 @@ install-packages: check-tools
 start-ui: install-packages
 	@cd "$(ROOT)/ui" && yarn run start
 
-.PHONY: distclean
-distclean:
-	@$(RM) -r "$(ROOT)/ui/node_modules"
+.PHONY: clean
 	@$(RM) -r "$(ROOT)/.next"
+
+.PHONY: distclean
+distclean: clean
+	@$(RM) -r "$(ROOT)/ui/node_modules"
