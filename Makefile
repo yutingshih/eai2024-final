@@ -54,7 +54,6 @@ start: install-packages
 	@. ~/anaconda3/bin/activate eai-final-2024-fall && \
 		mlx_lm.server --model "$(MODEL)" & export SERVER_PID=$$!
 	@cd "$(ROOT)/ui" && yarn run build && yarn run start
-	kill $${SERVER_PID}
 
 .PHONY: distclean
 distclean:
