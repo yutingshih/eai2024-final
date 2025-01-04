@@ -48,7 +48,7 @@ install-packages: check-tools
 			mlx==0.21.0 \
 			mlx-lm==0.20.1 \
 			coremltools==8.1
-	@cd "$(ROOT)/ui && yarn build
+	@cd "$(ROOT)/ui" && yarn build
 
 .PHONY: start-server
 start-server:
