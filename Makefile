@@ -27,8 +27,12 @@ check-tools:
 .PHONY: install-packages
 install-packages: check-tools
 	@if [ ! -d "$(ROOT)/ui/node_modules" ]; then \
-		cd "$(ROOT)/ui" && yarn install && yarn build; \
+		cd "$(ROOT)/ui" && yarn install && yarn run build; \
 	fi
+
+.PHONY: build-ui
+build-ui: install-packages
+	@cd "$(ROOT)/ui" && yarn run build
 
 .PHONY: start-ui
 start-ui: install-packages

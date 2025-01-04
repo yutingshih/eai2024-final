@@ -43,16 +43,20 @@ $ mlx_lm.server --model "<your-model-path>"
 
 ## Activate frontend
 
-In `eai2024-final` directory, run the following commands to run the frontend server:
+In `eai2024-final` directory, run the following command to run the frontend server:
 
 ```shell
-$ make install-packages
 $ make start-ui
-
-# or simply run:
-$ make
 ```
 
-The page can be seen at http://localhost:3000
+The page could be seen at http://localhost:3000
 
-**Note** If there is something going wrong with `make` or `yarn run build`, run `make clean` to cleanup the Next.js build.
+If there is any change of the frontend, run the command below to rebuild the frontend:
+
+```shell
+$ make build-ui
+```
+
+And re-run `make start-ui`.
+
+**Note** If there is anything going wrong with `make start-ui`, `make build-ui` or `yarn run build`, run `make clean` to cleanup the Next.js build and try again.
