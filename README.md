@@ -19,7 +19,7 @@ First, create the virtual environment using `conda`
 
 ```shell
 # create new virtual environment if it is not existing
-$ conda create -y --name "<your-env-name>"
+$ conda env create -y --name "<your-env-name>"
 # otherwise, activate it
 $ conda activate "<your-env-name>"
 ```
