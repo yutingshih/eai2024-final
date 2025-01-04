@@ -112,22 +112,16 @@ export default function Chat() {
     setInputCode("");
 
     const post = async () => {
-      let events;
-
-      try {
-        events = await stream("http://localhost:8080/v1/chat/completions", {
-          method: 'POST',
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messages,
-            stream: true,
-          }),
-        });
-      } catch {
-        console.error("Failed to fetch from server");
-      }
+      const events = await stream("http://localhost:8080/v1/chat/completions", {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages,
+          stream: true,
+        }),
+      });
 
       function isValidJSON(str?: string) {
         if (!str)
@@ -143,7 +137,7 @@ export default function Chat() {
 
       for await (const event of events!) {
         if (!isValidJSON(event.data)) {
-          console.error("Invalid JSON format: ", event.data);
+          console.warn("Invalid JSON format: ", event.data);
           continue;
         }
 
