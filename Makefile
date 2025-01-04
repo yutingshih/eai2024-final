@@ -14,8 +14,6 @@ endif
 ifeq ($(VENV),)
     $(warning No existing virtual environment found. Now creat a new one ("eai-final-2025-fall"))
     $(shell conda create --name eai-final-2024-fall python=3.10)
-else
-    $(shell conda activate eai-final-2025-fall)
 endif
 
 MODEL ?=
@@ -44,15 +42,17 @@ install-packages: check-tools
 	@if [ ! -d "$(ROOT)/ui/node_modules" ]; then \
 		cd "$(ROOT)/ui" && yarn install; \
 	fi
-	conda install \
-		huggingface-hub=0.26.2 \
-		mlx=0.21.0 \
-		mlx-lm=0.20.0 \
-		coremltools=8.1
+	conda activate eai-final-2024-fall && \
+		pip install \
+			huggingface-hub=0.26.2 \
+			mlx=0.21.0 \
+			mlx-lm=0.20.0 \
+			coremltools=8.1
 
 .PHONY: start
 start: install-packages
-	@mlx_lm.server --model "$(MODEL)" & export SERVER_PID=$$!
+	@conda activate eai-final-2024-fall && \
+		mlx_lm.server --model "$(MODEL)" & export SERVER_PID=$$!
 	@cd "$(ROOT)/ui" && yarn run build && yarn run start
 	kill $${SERVER_PID}
 
