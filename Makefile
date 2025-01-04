@@ -1,19 +1,16 @@
 ROOT := $(shell pwd)
 
 .PHONY: all
-all: install-packages
+all: start-ui
 
 CONDA := $(shell which conda)
 
 ifeq ($(CONDA),)
     $(error Conda is not installed.)
-else
-    VENV := $(shell conda env list | grep eai-final-2024-fall)
 endif
 
 ifeq ($(VENV),)
-    $(warning No existing virtual environment found. Now creat a new one ("eai-final-2024-fall"))
-    $(shell conda create -y --name eai-final-2024-fall python=3.10)
+    $(error No existing virtual environment found. Now creat a new one ("eai-final-2024-fall"))
 endif
 
 MODEL ?=
@@ -40,23 +37,11 @@ check-tools:
 .PHONY: install-packages
 install-packages: check-tools
 	@if [ ! -d "$(ROOT)/ui/node_modules" ]; then \
-		cd "$(ROOT)/ui" && yarn install; \
+		cd "$(ROOT)/ui" && yarn install && yarn build; \
 	fi
-	@conda init zsh && conda activate eai-final-2024-fall && \
-		pip install \
-			huggingface-hub==0.26.2 \
-			mlx==0.21.0 \
-			mlx-lm==0.20.1 \
-			coremltools==8.1
-	@cd "$(ROOT)/ui" && yarn build
-
-.PHONY: start-server
-start-server:
-	@conda init zsh && conda activate eai-final-2024-fall && \
-		mlx_lm.server --model "$(MODEL)"
 
 .PHONY: start-ui
-start-ui:
+start-ui: install-packages
 	@cd "$(ROOT)/ui" && yarn run start
 
 .PHONY: distclean
