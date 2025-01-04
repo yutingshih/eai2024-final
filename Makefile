@@ -3,6 +3,26 @@ ROOT := $(shell pwd)
 .PHONY: all
 all: start
 
+CONDA := $(shell which conda)
+
+ifeq ($(CONDA),)
+    $(error Conda is not installed.)
+else
+    VENV := $(shell conda env list | grep eai-final-2024-fall)
+endif
+
+ifeq ($(VENV),)
+    $(warning No existing virtual environment found. Now creat a new one ("eai-final-2025-fall"))
+else
+    $(shell conda activate eai-final-2025-fall)
+endif
+
+MODEL ?=
+
+ifeq ($(MODEL),)
+    $(error Please specify the path to the model)
+endif
+
 .PHONY: check-tools
 check-tools:
 	@if ! command -v node &>/dev/null; then \
@@ -23,11 +43,17 @@ install-packages: check-tools
 	@if [ ! -d "$(ROOT)/ui/node_modules" ]; then \
 		cd "$(ROOT)/ui" && yarn install; \
 	fi
+	conda install \
+		huggingface-hub=0.26.2 \
+		mlx=0.21.0 \
+		mlx-lm=0.20.0 \
+		coremltools=8.1
 
 .PHONY: start
 start: install-packages
-	# TODO: start llama as well
+	@mlx_lm.server --model "$(MODEL)" & export SERVER_PID=$$!
 	@cd "$(ROOT)/ui" && yarn run build && yarn run start
+	kill $${SERVER_PID}
 
 .PHONY: distclean
 distclean:
