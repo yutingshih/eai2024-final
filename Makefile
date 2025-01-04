@@ -36,7 +36,7 @@ start-ui: install-packages
 
 .PHONY: clean
 clean:
-	@$(RM) -r "$(ROOT)/.next"
+	@$(RM) -r "$(ROOT)/ui/.next"
 
 .PHONY: distclean
 distclean: clean
