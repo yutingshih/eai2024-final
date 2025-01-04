@@ -136,8 +136,10 @@ export default function Chat() {
       }
 
       for await (const event of events) {
-        if (!isValidJSON(event.data))
+        if (!isValidJSON(event.data)) {
+          console.error("Invalid JSON format");
           continue;
+        }
 
         if (model == "Llama-2-7B")
           console.log(JSON.parse(event.data!));
