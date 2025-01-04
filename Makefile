@@ -46,7 +46,7 @@ install-packages: check-tools
 		pip install \
 			huggingface-hub==0.26.2 \
 			mlx==0.21.0 \
-			mlx-lm==0.20.0 \
+			mlx-lm==0.20.1 \
 			coremltools==8.1
 
 .PHONY: start
