@@ -127,8 +127,6 @@ export default function Chat() {
         });
       } catch {
         console.error("Failed to fetch from server");
-      } finally {
-        setLoading(false);
       }
 
       function isValidJSON(str?: string) {
@@ -145,7 +143,7 @@ export default function Chat() {
 
       for await (const event of events!) {
         if (!isValidJSON(event.data)) {
-          console.error("Invalid JSON format");
+          console.error("Invalid JSON format: ", event.data);
           continue;
         }
 
@@ -168,13 +166,15 @@ export default function Chat() {
     if (!isTransmissionDone)
       return;
 
+    setLoading(false);
+
     setMessages(prev => [
       ...prev,
       { role: "assistant", content: outputCode }
     ]);
 
     setHistory(prev => prev + outputCode);
-  }, [isTransmissionDone, outputCode, setMessages, setHistory]);
+  }, [isTransmissionDone, setLoading, outputCode, setMessages, setHistory]);
 
   return (
     <Flex
