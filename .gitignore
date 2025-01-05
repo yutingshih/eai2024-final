@@ -172,5 +172,5 @@ history.json
 # Model weights
 *.pt
 *.pth
-weights/
+weights
 act_scales/

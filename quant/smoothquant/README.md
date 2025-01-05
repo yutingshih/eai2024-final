@@ -54,7 +54,7 @@ eai2024-final
         └── llama2-smooth-w8a8.pt
 ```
 
-The latest quantized weights is in `weights/smoothquant-1226/`.
+The latest smoothed Llama2 weights is in `weights/smoothquant-0105/`, and the latest smoothed Llama3 weights is in `weights/smoothquant-0103/`.
 
 ## Quantize FP16 Model to INT8
 

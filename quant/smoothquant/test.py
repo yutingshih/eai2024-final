@@ -1,4 +1,5 @@
 import argparse
+import time
 import os
 from packaging.version import Version
 from pathlib import Path
@@ -14,6 +15,7 @@ from transformers import (
 )
 from datasets import load_dataset
 from smoothquant.fake_quant import W8A8Linear
+import pandas as pd
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
@@ -62,6 +64,7 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
+        "-i",
         "--model",
         default="../../weights/smoothquant/llama2-smooth-w8a8.pt",
         help="Path to the PyTorch model to be evaluated (*.pt)",
@@ -85,6 +88,13 @@ def parse_args():
         help="Indicate if the model loaded is quantized",
     )
     parser.add_argument(
+        "-g",
+        "--gpu",
+        type=int,
+        default=0,
+        help="GPU index to use for the evaluation",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Show more information"
     )
     args = parser.parse_args()
@@ -105,7 +115,7 @@ def parse_args():
     return args
 
 
-def evaluate_fp16_model(path: str | Path, evaluator: Evaluator) -> float:
+def load_fp16_model(path: str | Path, evaluator: Evaluator) -> float:
     model = LlamaForCausalLM.from_pretrained(
         path, torch_dtype=torch.float16, device_map="auto"
     )
@@ -114,12 +124,10 @@ def evaluate_fp16_model(path: str | Path, evaluator: Evaluator) -> float:
     if verbose:
         print(model)
 
-    ppl = evaluator.evaluate(model)
-    print(f"FP16 model perplexity: {ppl}")
-    return ppl
+    return model
 
 
-def evaluate_int8_model(path: str | Path, evaluator: Evaluator, format: str) -> float:
+def load_int8_model(path: str | Path, evaluator: Evaluator, format: str) -> float:
     W8A8Linear.nop = lambda self, x: x
 
     # you need to map the model to the CPU first instead of directly loading it onto the MPS device
@@ -140,9 +148,7 @@ def evaluate_int8_model(path: str | Path, evaluator: Evaluator, format: str) -> 
     if verbose:
         print(model)
 
-    ppl = evaluator.evaluate(model)
-    print(f"SmoothQuant W8A8 quantized model perplexity: {ppl}")
-    return ppl
+    return model
 
 
 def main():
@@ -150,18 +156,50 @@ def main():
     global verbose
     verbose = args.verbose
 
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+
     print(
-        f"Using device: {torch.cuda.get_device_name(0) if DEVICE == 'cuda' else DEVICE.upper()}"
+        f"Using device: {torch.cuda.get_device_name(0) if DEVICE == f'cuda' else DEVICE.upper()}"
     )
 
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
     dataset = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
     evaluator = Evaluator(dataset, tokenizer, DEVICE)
 
+    model_path = Path(args.model)
+
     if args.quantized:
-        evaluate_int8_model(path=args.model, evaluator=evaluator, format=args.format)
+        model = load_int8_model(
+            path=args.model, evaluator=evaluator, format=args.format
+        )
     else:
-        evaluate_fp16_model(path=args.model, evaluator=evaluator)
+        model = load_fp16_model(path=args.model, evaluator=evaluator)
+
+    ppl = evaluator.evaluate(model)
+    print(f"perplexity: {ppl}")
+
+    res = {
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        **vars(args),
+        "perplexity": ppl.item(),
+        "size": model_path.stat().st_size,
+    }
+    df = pd.DataFrame([res])
+
+    # append the results to the results.csv
+    if Path("results.csv").exists():
+        df = pd.concat([pd.read_csv("results.csv"), df], ignore_index=True)
+    df.sort_values("perplexity", inplace=True)
+    df.to_csv("results.csv", index=False)
+
+    # append the results to the README.md
+    with open(f"{model_path.parent}/README.md", "a") as f:
+        print(f"### {time.strftime('%Y-%m-%d %H:%M:%S')}", file=f)
+        for k, v in vars(args).items():
+            print(f"- {k}: `{v}`  ", file=f)
+        print(f"- perplexity: `{ppl}`  ", file=f)
+        print(file=f)
 
 
 if __name__ == "__main__":
