@@ -15,7 +15,9 @@ from transformers import (
 )
 from datasets import load_dataset
 from smoothquant.fake_quant import W8A8Linear
-import pandas as pd
+
+from utils import save_csv
+
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
@@ -80,6 +82,12 @@ def parse_args():
         "--tokenizer",
         default="../../weights/meta-llama/Llama-2-7b-hf",
         help="Directory to the tokenizer",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        default="results.csv",
+        help="Path to save the results",
     )
     parser.add_argument(
         "-q",
@@ -185,13 +193,9 @@ def main():
         "perplexity": ppl.item(),
         "size": model_path.stat().st_size,
     }
-    df = pd.DataFrame([res])
 
-    # append the results to the results.csv
-    if Path("results.csv").exists():
-        df = pd.concat([pd.read_csv("results.csv"), df], ignore_index=True)
-    df.sort_values("perplexity", inplace=True)
-    df.to_csv("results.csv", index=False)
+    # append the results to the results/*.csv
+    save_csv(res, args.output, existed="append", verbose=True, sort_by="perplexity")
 
     # append the results to the README.md
     with open(f"{model_path.parent}/README.md", "a") as f:
