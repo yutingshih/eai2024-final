@@ -167,6 +167,10 @@ export default function Chat() {
       { role: "assistant", content: outputCode }
     ]);
 
+
+    if(!inputOnSubmit || !outputCode)
+        return;
+
     setHistory(prev => prev + model + "\n" + inputOnSubmit + "\n" + outputCode + "\n");
   }, [isTransmissionDone, setLoading, outputCode, setMessages, setHistory]);
 
