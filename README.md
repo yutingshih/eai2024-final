@@ -41,6 +41,14 @@ Finally, run with `MLX` server
 $ mlx_lm.server --model "<your-model-path>"
 ```
 
+If you want to load second model, run:
+
+```shell
+$ mlx_lm.server --port 8081 --model "<your-second-model-path>"
+```
+
+**NOTE**: In frontend, "Llama-3.1-8B" (default) uses "8080" port and "Llama-2-7B" uses "8081" port. So, load "Llama-3.1-8B" first.
+
 ## Activate frontend
 
 In `eai2024-final` directory, run the following command to run the frontend server:

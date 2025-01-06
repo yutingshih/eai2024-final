@@ -2,6 +2,7 @@
 /*eslint-disable*/
 
 import { events, stream } from 'fetch-event-stream';
+import type { ServerSentEventMessage } from 'fetch-event-stream';
 
 import Link from '@/components/link/Link';
 import MessageBoxChat from '@/components/MessageBox';
@@ -111,17 +112,29 @@ export default function Chat() {
 
     setInputCode("");
 
+    const url = model == "Llama-3.1-8B" ? "http://localhost:8080/v1/chat/completions": "http://localhost:8081/v1/chat/completions";
+
     const post = async () => {
-      const events = await stream("http://localhost:8080/v1/chat/completions", {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages,
-          stream: true,
-        }),
-      });
+      let events: AsyncGenerator<ServerSentEventMessage, void, unknown>;
+      let failed = false;
+
+      try {
+        const event = await stream(url, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages,
+            stream: true,
+          }),
+        });
+
+        events = event;
+      } catch {
+        alert(`${model} server not found`);
+        failed = true;
+      }
 
       function isValidJSON(str?: string) {
         if (!str)
@@ -135,22 +148,26 @@ export default function Chat() {
         return true;
       }
 
-      for await (const event of events!) {
-        if (!isValidJSON(event.data)) {
-          console.warn("Invalid JSON format: ", event.data);
-          continue;
+      if (!failed) {
+        for await (const event of events!) {
+          if (!isValidJSON(event.data)) {
+            console.warn("Invalid JSON format: ", event.data);
+            continue;
+          }
+
+          if (model == "Llama-2-7B")
+            setOutputCode(prev => prev + JSON.parse(event.data!)["choices"][0]["delta"]["content"]);
+          else if (model == "Llama-3.1-8B")
+            setOutputCode(prev => prev + JSON.parse(event.data!)["choices"][0]["delta"]["content"]);
+          else
+            alert("Unsupported model");
         }
-
-        if (model == "Llama-2-7B")
-          setOutputCode(prev => prev + JSON.parse(event.data!)["choices"][0]["delta"]["content"]);
-        else if (model == "Llama-3.1-8B")
-          setOutputCode(prev => prev + JSON.parse(event.data!)["choices"][0]["delta"]["content"]);
-        else
-          alert("Unsupported model");
+      } else {
+        const last = messages as Array<{ role: string, content: string }>;
+        setInputCode(last[last.length - 1]["content"] as string);
       }
-
       setTransmissionDone(true);
-    }
+   }
 
     post();
 
