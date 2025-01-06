@@ -29,7 +29,7 @@ import { Context } from './layout';
 
 export default function Chat() {
   const { history, setHistory } = useContext(Context);
-  const [messages, setMessages] = useState<Array<any>>([]);
+  const [messages, setMessages] = useState<{ "Llama-3.1-8B": Array<{ role: string, content: string }>, "Llama-2-7B": Array<{ role: string, content: string }> }>({ "Llama-3.1-8B": [], "Llama-2-7B": [] });
 
   // Input States
   const [inputOnSubmit, setInputOnSubmit] = useState<string>('');
@@ -89,11 +89,16 @@ export default function Chat() {
     }
 
     setLoading(true);
-    setMessages(prev => [
-      ...prev,
-      { role: "system", content: "" },
-      { role: "user", content: inputCode },
-    ]);
+    setMessages(prev => {
+      if (model == "Llama-3.1-8B") {
+        return { "Llama-3.1-8B": [...prev["Llama-3.1-8B"], { role: "system", content: "" }, { role: "user", content: inputCode }], "Llama-2-7B": prev["Llama-2-7B"] };
+      } else if (model == "Llama-2-7B") {
+        return { "Llama-3.1-8B": prev["Llama-3.1-8B"], "Llama-2-7B": [...prev["Llama-2-7B"], { role: "system", content: "" }, { role: "user", content: inputCode }] };
+      } else {
+        alert("Unsupport model");
+        return prev;
+      }
+    });
   }, [setInputOnSubmit, inputCode, setOutputCode, setLoading, setMessages]);
 
   const handleKeyDown = useCallback((e: any) => {
@@ -112,7 +117,7 @@ export default function Chat() {
 
     setInputCode("");
 
-    const url = model == "Llama-3.1-8B" ? "http://localhost:8080/v1/chat/completions": "http://localhost:8081/v1/chat/completions";
+    const url = model == "Llama-3.1-8B" ? "http://localhost:8080/v1/chat/completions" : "http://localhost:8081/v1/chat/completions";
 
     const post = async () => {
       let events: AsyncGenerator<ServerSentEventMessage, void, unknown>;
@@ -125,7 +130,7 @@ export default function Chat() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            messages,
+            messages: messages[model],
             stream: true,
           }),
         });
@@ -163,11 +168,20 @@ export default function Chat() {
             alert("Unsupported model");
         }
       } else {
-        const last = messages as Array<{ role: string, content: string }>;
-        setInputCode(last[last.length - 1]["content"] as string);
+        let last: Array<{ role: string, content: string }>;
+        if (model == "Llama-3.1-8B") {
+          last = messages["Llama-3.1-8B"];
+        } else if (model == "Llama-2-7B") {
+          last = messages["Llama-2-7B"];
+        } else {
+          alert("Unsupport model");
+          last = [{ role: "assistant", content: "" }];
+        }
+          
+        setInputCode(last[last.length - 1]["content"]);
       }
       setTransmissionDone(true);
-   }
+    }
 
     post();
 
@@ -179,14 +193,19 @@ export default function Chat() {
 
     setLoading(false);
 
-    setMessages(prev => [
-      ...prev,
-      { role: "assistant", content: outputCode }
-    ]);
+    setMessages(prev => {
+      if (model == "Llama-3.1-8B") {
+        return { "Llama-3.1-8B": [...prev["Llama-3.1-8B"], { role: "assistant", content: outputCode }], "Llama-2-7B": prev["Llama-2-7B"] }
+      } else if (model == "Llama-2-7B") {
+        return { "Llama-3.1-8B": prev["Llama-3.1-8B"], "Llama-2-7B": [...prev["Llama-2-7B"], { role: "assistant", content: outputCode }] }
+      } else {
+        alert("Unsupport model");
+        return prev;
+      }
+    });
 
-
-    if(!inputOnSubmit || !outputCode)
-        return;
+    if (!inputOnSubmit || !outputCode)
+      return;
 
     setHistory(prev => prev + model + "\n" + inputOnSubmit + "\n" + outputCode + "\n");
   }, [isTransmissionDone, setLoading, outputCode, setMessages, setHistory]);
