@@ -142,7 +142,7 @@ export default function Chat() {
         }
 
         if (model == "Llama-2-7B")
-          console.log(JSON.parse(event.data!));
+          setOutputCode(prev => prev + JSON.parse(event.data!)["choices"][0]["delta"]["content"]);
         else if (model == "Llama-3.1-8B")
           setOutputCode(prev => prev + JSON.parse(event.data!)["choices"][0]["delta"]["content"]);
         else
