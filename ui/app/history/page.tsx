@@ -8,7 +8,7 @@ export default function Histroy() {
     return (
         <>
             <div>This is history page.</div>
-            <div>{history}</div>
+            <div style={{ white-space: "pre-line" }}>{history}</div>
         </>
     )
 }
